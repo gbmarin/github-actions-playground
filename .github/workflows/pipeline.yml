@@ -1,0 +1,94 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - develop
+      - staging
+      - main
+
+jobs:
+
+  # -----------------------------------------------
+  # JOB 1: Lint — runs on every push, every branch
+  # -----------------------------------------------
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install flake8
+        run: pip install flake8
+
+      - name: Run lint
+        run: flake8 .
+
+  # -----------------------------------------------
+  # JOB 2: Test — only runs if lint passed
+  # -----------------------------------------------
+  test:
+    needs: lint                  # ← blocked if lint fails
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run tests
+        run: pytest
+
+  # -----------------------------------------------
+  # JOB 3: Deploy to DEVELOPMENT
+  # only on push to develop + test passed
+  # -----------------------------------------------
+  deploy-development:
+    needs: test                  # ← blocked if test fails
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    environment: development     # ← pulls APP_ENV from development
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Simulate deploy to development
+        run: echo "Deploying to ${{ vars.APP_ENV }} environment..."
+
+  # -----------------------------------------------
+  # JOB 4: Deploy to STAGING
+  # only on push to staging + test passed
+  # -----------------------------------------------
+  deploy-staging:
+    needs: test                  # ← blocked if test fails
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: staging         # ← pulls APP_ENV from staging
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Simulate deploy to staging
+        run: echo "Deploying to ${{ vars.APP_ENV }} environment..."
+
+  # -----------------------------------------------
+  # JOB 5: Deploy to PRODUCTION
+  # only on push to main + test passed
+  # -----------------------------------------------
+  deploy-production:
+    needs: test                  # ← blocked if test fails
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production      # ← pulls APP_ENV from production
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Simulate deploy to production
+        run: echo "Deploying to ${{ vars.APP_ENV }} environment..."
